@@ -843,6 +843,7 @@
                 endif
               -%}
               <div
+                id="purelane-hero-slide-{{ section.id }}-{{ block.id }}"
                 class="purelane-hero__slide{% if slide_i == 0 %} is-active{% endif %}"
                 data-block-id="{{ block.id }}"
                 aria-hidden="{% if slide_i == 0 %}false{% else %}true{% endif %}"
@@ -909,6 +910,7 @@
               <button
                 type="button"
                 class="purelane-hero__dot"
+                aria-controls="purelane-hero-slide-{{ section.id }}-{{ block.id }}"
                 aria-pressed="{% if dot_i == 0 %}true{% else %}false{% endif %}"
                 aria-label="{% if block.settings.offer_label != blank %}{{ block.settings.offer_label | escape }}{% else %}Offer {{ dot_i | plus: 1 }}{% endif %}"
               ></button>
