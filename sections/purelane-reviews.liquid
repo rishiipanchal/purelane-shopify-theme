@@ -349,7 +349,7 @@
     {%- endfor -%}
 
     <div class="purelane-reviews__rail" role="region" aria-label="Customer reviews" tabindex="0">
-      <div class="purelane-reviews__track">
+      <div class="purelane-reviews__track"{% if request.design_mode %} style="animation-play-state: paused;"{% endif %}>
         {{ review_cards_real }}
         <div class="purelane-reviews__dup" aria-hidden="true">{{ review_cards_dup }}</div>
       </div>
@@ -464,7 +464,7 @@
         {
           "type": "review",
           "settings": {
-            "title": "Works like a charmmm",
+            "title": "Works like a charm",
             "body": "Finally an eco option that cleans as well as the chemical detergent I used for years, and it smells better.",
             "reviewer": "Anita",
             "rating": 5
@@ -473,7 +473,7 @@
         {
           "type": "review",
           "settings": {
-            "title": "Best dishwash everr",
+            "title": "Best dishwash ever",
             "body": "Our old dishwash left my help with dry, cracked skin. That stopped completely after we switched.",
             "reviewer": "Priya",
             "rating": 5
