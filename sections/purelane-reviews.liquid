@@ -1,0 +1,514 @@
+{%- comment -%}
+  Purelane — Customer reviews section
+  Productionised from the `#reviews` section of the purelane-homepage.html prototype.
+
+  Notes for reviewers:
+  - Each review is a reusable block rendered by one Liquid loop. Review copy lives
+    in block settings; nothing is hardcoded in the markup.
+  - The product reference uses a real Shopify product (product.title) when one is
+    picked; it falls back to an optional free-text label, and disappears if both
+    are empty. This covers the prototype's "Liquid handwash" review, which is not
+    one of the seeded products.
+  - No JavaScript. The marquee is a pure-CSS animation over a track that repeats
+    the cards once (the duplicate is display:contents + aria-hidden, so it feeds
+    the loop without being announced twice). Under prefers-reduced-motion the
+    animation stops and the rail becomes a native, keyboard-scrollable region.
+  - All CSS is scoped to #shopify-section-{{ section.id }} so the section can be
+    added, duplicated and reordered safely.
+{%- endcomment -%}
+
+{%- liquid
+  assign heading_tag = section.settings.heading_tag | default: 'h2'
+  assign heading_id = 'purelane-reviews-heading-' | append: section.id
+  assign review_blocks = section.blocks | where: 'type', 'review'
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --pr-ink: #17102b;
+    --pr-body: rgba(36, 26, 61, 0.78);
+    --pr-muted: rgba(36, 26, 61, 0.56);
+    --pr-accent: #b8701c;
+    --pr-accent-ink: #8a5410;
+    --pr-star: #c9761d;
+    --pr-line: rgba(75, 58, 143, 0.16);
+    --pr-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --pr-maxw: 1180px;
+    --pr-card: 284px;
+    --pr-speed: 52s;
+    --sec-y: 34px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews {
+    position: relative;
+    padding: var(--sec-y) 0;
+    color: var(--pr-body);
+  }
+
+  /* ---------- head ---------- */
+  #shopify-section-{{ section.id }} .purelane-reviews__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 18px;
+    max-width: var(--pr-maxw);
+    margin: 0 auto 14px;
+    padding: 0 18px;
+    text-align: center;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__kicker {
+    margin: 0;
+    flex-basis: 100%;
+    font-family: var(--font-heading-family);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--pr-muted);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__agg {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pr-body);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__agg b {
+    font-family: var(--font-heading-family);
+    font-size: 16px;
+    letter-spacing: 0;
+    color: var(--pr-accent-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__agg-stars {
+    color: var(--pr-star);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+  }
+
+  /* ---------- rail ---------- */
+  #shopify-section-{{ section.id }} .purelane-reviews__rail {
+    position: relative;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__track {
+    display: flex;
+    gap: 12px;
+    width: max-content;
+    padding: 4px 18px;
+    animation: purelane-reviews-marquee var(--pr-speed) linear infinite;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__rail:hover .purelane-reviews__track,
+  #shopify-section-{{ section.id }} .purelane-reviews__rail:focus-within .purelane-reviews__track {
+    animation-play-state: paused;
+  }
+
+  /* duplicated set: flows into the flex track, hidden from assistive tech */
+  #shopify-section-{{ section.id }} .purelane-reviews__dup {
+    display: contents;
+  }
+
+  @keyframes purelane-reviews-marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-50%, 0, 0); }
+  }
+
+  /* ---------- card ---------- */
+  #shopify-section-{{ section.id }} .purelane-reviews__card {
+    flex: 0 0 var(--pr-card);
+    display: flex;
+    flex-direction: column;
+    width: var(--pr-card);
+    padding: 15px 17px;
+    border-radius: 18px;
+    background: linear-gradient(158deg, rgba(255, 255, 255, 0.66), rgba(236, 230, 247, 0.44));
+    border: 1px solid rgba(75, 58, 143, 0.13);
+    box-shadow: 0 16px 38px rgba(58, 44, 112, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+    backdrop-filter: blur(12px) saturate(130%);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__stars {
+    margin-bottom: 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.2em;
+    color: var(--pr-star);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__stars .is-empty {
+    color: rgba(36, 26, 61, 0.24);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__badge {
+    align-self: flex-start;
+    margin-bottom: 9px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(201, 118, 29, 0.14);
+    border: 1px solid rgba(201, 118, 29, 0.34);
+    color: var(--pr-accent-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__title {
+    margin: 0 0 7px;
+    font-family: var(--font-heading-family);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.25;
+    color: var(--pr-ink);
+    overflow-wrap: anywhere;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__body {
+    margin: 0 0 11px;
+    font-size: 12.6px;
+    line-height: 1.52;
+    color: var(--pr-body);
+    overflow-wrap: anywhere;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__who {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: auto;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pr-muted);
+    flex-wrap: wrap;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__who svg {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    color: var(--pr-accent-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__who b {
+    font-weight: 700;
+    color: var(--pr-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__empty {
+    max-width: var(--pr-maxw);
+    margin: 0 auto;
+    padding: 30px 18px;
+    text-align: center;
+    color: var(--pr-body);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-reviews__rail:focus-visible {
+    outline: 2px solid var(--pr-accent-ink);
+    outline-offset: -4px;
+    border-radius: 10px;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 760px) {
+    #shopify-section-{{ section.id }} {
+      --pr-card: 250px;
+      --pr-speed: 40s;
+      --sec-y: 22px;
+    }
+    #shopify-section-{{ section.id }} .purelane-reviews__card {
+      padding: 13px 14px;
+    }
+  }
+
+  /* ---------- reduced motion: stop the marquee, allow manual scroll ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    #shopify-section-{{ section.id }} .purelane-reviews__rail {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    #shopify-section-{{ section.id }} .purelane-reviews__track {
+      width: max-content;
+      animation: none;
+    }
+    #shopify-section-{{ section.id }} .purelane-reviews__dup {
+      display: none;
+    }
+    #shopify-section-{{ section.id }} .purelane-reviews__card {
+      scroll-snap-align: start;
+    }
+  }
+{% endstyle %}
+
+<section class="purelane-reviews"{% if section.settings.kicker != blank %} aria-labelledby="{{ heading_id }}"{% else %} aria-label="Customer reviews"{% endif %}>
+  <div class="purelane-reviews__head">
+    {%- if section.settings.kicker != blank -%}
+      <{{ heading_tag }} class="purelane-reviews__kicker" id="{{ heading_id }}">{{ section.settings.kicker | escape }}</{{ heading_tag }}>
+    {%- endif -%}
+
+    {%- if section.settings.stat_rating != blank -%}
+      <span class="purelane-reviews__agg">
+        <span class="purelane-reviews__agg-stars" aria-hidden="true">★★★★★</span>
+        {{ section.settings.stat_rating | escape }}
+      </span>
+    {%- endif -%}
+
+    {%- if section.settings.stat_homes != blank -%}
+      <span class="purelane-reviews__agg">{{ section.settings.stat_homes | escape }}</span>
+    {%- endif -%}
+  </div>
+
+  {%- if review_blocks.size > 0 -%}
+    {%- comment -%}
+      Build both sets in one pass so the card body stays DRY: the real set carries
+      {{ block.shopify_attributes }} for the theme editor; the aria-hidden duplicate
+      (used only to complete the seamless loop) carries none.
+    {%- endcomment -%}
+    {%- assign review_cards_real = '' -%}
+    {%- assign review_cards_dup = '' -%}
+    {%- for block in review_blocks -%}
+      {%- liquid
+        assign rating = block.settings.rating | default: 5
+        assign product = block.settings.product
+        assign product_name = ''
+        if product != blank
+          assign product_name = product.title
+        elsif block.settings.product_label != blank
+          assign product_name = block.settings.product_label
+        endif
+      -%}
+      {%- capture card_inner -%}
+        <div class="purelane-reviews__stars" role="img" aria-label="Rated {{ rating }} out of 5">
+          {%- for i in (1..5) -%}
+            {%- if i <= rating -%}
+              <span aria-hidden="true">&#9733;</span>
+            {%- else -%}
+              <span class="is-empty" aria-hidden="true">&#9734;</span>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+
+        {%- if block.settings.badge != blank -%}
+          <span class="purelane-reviews__badge">{{ block.settings.badge | escape }}</span>
+        {%- endif -%}
+
+        {%- if block.settings.title != blank -%}
+          <h3 class="purelane-reviews__title">{{ block.settings.title | escape }}</h3>
+        {%- endif -%}
+
+        {%- if block.settings.body != blank -%}
+          <p class="purelane-reviews__body">{{ block.settings.body | escape }}</p>
+        {%- endif -%}
+
+        <div class="purelane-reviews__who">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="m5 13 4 4L19 7" />
+          </svg>
+          {%- if block.settings.reviewer != blank -%}
+            <b>{{ block.settings.reviewer | escape }}</b>
+          {%- endif -%}
+          {%- if product_name != blank -%}
+            <span>&middot; {{ product_name | escape }}</span>
+          {%- endif -%}
+        </div>
+      {%- endcapture -%}
+
+      {%- capture card_real -%}<article class="purelane-reviews__card" {{ block.shopify_attributes }}>{{ card_inner }}</article>{%- endcapture -%}
+      {%- capture card_dup -%}<article class="purelane-reviews__card">{{ card_inner }}</article>{%- endcapture -%}
+      {%- assign review_cards_real = review_cards_real | append: card_real -%}
+      {%- assign review_cards_dup = review_cards_dup | append: card_dup -%}
+    {%- endfor -%}
+
+    <div class="purelane-reviews__rail" role="region" aria-label="Customer reviews" tabindex="0">
+      <div class="purelane-reviews__track">
+        {{ review_cards_real }}
+        <div class="purelane-reviews__dup" aria-hidden="true">{{ review_cards_dup }}</div>
+      </div>
+    </div>
+
+  {%- elsif request.design_mode -%}
+    <p class="purelane-reviews__empty">Add a <strong>Review</strong> block to populate the reviews rail.</p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Purelane reviews",
+  "max_blocks": 5,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section heading"
+    },
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "Eyebrow heading",
+      "default": "That's what they said"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading level",
+      "info": "Use H2 on a page that already has an H1 (e.g. the hero).",
+      "options": [
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "text",
+      "id": "stat_rating",
+      "label": "Rating stat",
+      "info": "Shown after five stars.",
+      "default": "4.8 from 8,000+ reviews"
+    },
+    {
+      "type": "text",
+      "id": "stat_homes",
+      "label": "Homes stat",
+      "default": "Loved by 12 lakh+ homes"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "review",
+      "name": "Review",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Review title",
+          "default": "Works like a charm"
+        },
+        {
+          "type": "textarea",
+          "id": "body",
+          "label": "Review text"
+        },
+        {
+          "type": "text",
+          "id": "reviewer",
+          "label": "Reviewer name",
+          "default": "Verified buyer"
+        },
+        {
+          "type": "range",
+          "id": "rating",
+          "label": "Rating",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "unit": "★",
+          "default": 5
+        },
+        {
+          "type": "header",
+          "content": "Product reference (optional)"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product",
+          "info": "The review shows this product's name. Leave empty to use the label below or nothing."
+        },
+        {
+          "type": "text",
+          "id": "product_label",
+          "label": "Product label fallback",
+          "info": "Used only when no product is selected, e.g. for a product not in the catalog."
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Badge",
+          "info": "Optional pill shown above the title."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Purelane reviews",
+      "blocks": [
+        {
+          "type": "review",
+          "settings": {
+            "title": "Works like a charmmm",
+            "body": "Finally an eco option that cleans as well as the chemical detergent I used for years, and it smells better.",
+            "reviewer": "Anita",
+            "rating": 5
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "title": "Best dishwash everr",
+            "body": "Our old dishwash left my help with dry, cracked skin. That stopped completely after we switched.",
+            "reviewer": "Priya",
+            "rating": 5
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "title": "Great product, great packaging",
+            "body": "Very soft on hands with a lovely fragrance, and it feels good to be using far less plastic.",
+            "reviewer": "Sunita",
+            "rating": 5,
+            "product_label": "Liquid handwash"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "title": "Dog friendly",
+            "body": "We switched because chemical floor cleaners were setting off my dog's allergies. No reactions since.",
+            "reviewer": "Rohit S.",
+            "rating": 5
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "title": "Sparkling taps again",
+            "body": "Hard water had ruined our bathroom fittings. Two sprays and the scale wipes straight off, no scrubbing.",
+            "reviewer": "Verified buyer",
+            "rating": 5
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

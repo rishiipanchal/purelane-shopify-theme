@@ -1,0 +1,761 @@
+{%- comment -%}
+  Purelane — Build your bundle section
+  Productionised from the `#bundles` section of the purelane-homepage.html prototype.
+
+  Notes for reviewers:
+  - Each bundle tier is a reusable block rendered by one Liquid loop. A tier holds
+    up to five product-picker slots; only filled slots render as pack thumbnails,
+    and the "Products" count is derived from them (never hardcoded).
+  - Product title / image / URL / availability come from real Shopify products.
+    Bundle price, compare-at and savings are offer-level marketing values set per
+    block, so they are free-form text fields rather than product.price.
+  - Layout matches the prototype: a static responsive grid (1 → 3 columns), not a
+    carousel — so no JavaScript is needed.
+  - All CSS is scoped to #shopify-section-{{ section.id }} so the section can be
+    added, duplicated and reordered safely.
+{%- endcomment -%}
+
+{%- liquid
+  assign heading_tag = section.settings.heading_tag | default: 'h2'
+  assign heading_id = 'purelane-bundles-heading-' | append: section.id
+  assign bundle_blocks = section.blocks | where: 'type', 'bundle'
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --pb-ink: #17102b;
+    --pb-body: rgba(36, 26, 61, 0.78);
+    --pb-muted: rgba(36, 26, 61, 0.56);
+    --pb-accent: #b8701c;
+    --pb-accent-ink: #8a5410;
+    --pb-leaf: #416812;
+    --pb-line: rgba(75, 58, 143, 0.16);
+    --pb-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --pb-maxw: 1180px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles {
+    position: relative;
+    padding: clamp(40px, 6vw, 72px) 0;
+    background: linear-gradient(178deg, #f0fbf2 0%, #d9f2df 34%, #c3e9cf 72%, #b6e2c5 100%);
+    color: var(--pb-body);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__wrap {
+    max-width: var(--pb-maxw);
+    margin: 0 auto;
+    padding: 0 18px;
+  }
+
+  /* ---------- header panel (glass card) ---------- */
+  #shopify-section-{{ section.id }} .purelane-bundles__panel {
+    margin-bottom: 16px;
+    padding: clamp(26px, 3.4vw, 40px);
+    border-radius: 24px;
+    text-align: center;
+    background: linear-gradient(158deg, rgba(255, 255, 255, 0.8), rgba(236, 230, 247, 0.56) 58%, rgba(222, 212, 240, 0.5));
+    border: 1px solid var(--pb-line);
+    box-shadow: 0 22px 54px rgba(58, 44, 112, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__kicker {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--pb-muted);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__title {
+    margin: 12px 0 0;
+    font-family: var(--font-heading-family);
+    font-weight: 800;
+    font-size: clamp(30px, 4.6vw, 54px);
+    line-height: 0.94;
+    letter-spacing: -0.018em;
+    text-transform: uppercase;
+    color: var(--pb-ink);
+    overflow-wrap: break-word;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__lede {
+    max-width: 60ch;
+    margin: 12px auto 0;
+    font-size: clamp(14px, 1.2vw, 16px);
+    line-height: 1.6;
+    color: var(--pb-body);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__lede > * { margin: 0; }
+
+  /* ---------- tier grid ---------- */
+  #shopify-section-{{ section.id }} .purelane-bundles__grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1fr;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 760px) {
+    #shopify-section-{{ section.id }} .purelane-bundles__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* ---------- tier card ---------- */
+  #shopify-section-{{ section.id }} .purelane-bundles__tier {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 24px 22px;
+    border-radius: 24px;
+    background: linear-gradient(158deg, rgba(255, 255, 255, 0.8), rgba(236, 230, 247, 0.56) 58%, rgba(222, 212, 240, 0.5));
+    border: 1px solid var(--pb-line);
+    box-shadow: 0 22px 54px rgba(58, 44, 112, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    transition: transform 0.4s var(--pb-ease), box-shadow 0.4s var(--pb-ease);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__tier.is-featured {
+    border-color: rgba(201, 118, 29, 0.46);
+    box-shadow: 0 22px 54px rgba(58, 44, 112, 0.14), 0 0 0 1px rgba(201, 118, 29, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  }
+
+  @media (hover: hover) {
+    #shopify-section-{{ section.id }} .purelane-bundles__tier:hover {
+      transform: translateY(-5px);
+    }
+  }
+
+  /* optional corner flag */
+  #shopify-section-{{ section.id }} .purelane-bundles__flag {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 8.6px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #00706a, #004b46);
+    color: #f4fdf6;
+  }
+
+  /* tag / title pill */
+  #shopify-section-{{ section.id }} .purelane-bundles__tag {
+    align-self: flex-start;
+    margin: 0 0 14px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-family: var(--font-heading-family);
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: rgba(201, 118, 29, 0.14);
+    border: 1px solid rgba(201, 118, 29, 0.34);
+    color: var(--pb-leaf);
+  }
+
+  /* pack thumbnails */
+  #shopify-section-{{ section.id }} .purelane-bundles__pix {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    height: 78px;
+    margin: -4px 0 16px;
+    padding: 8px 6px;
+    border-radius: 14px;
+    background: linear-gradient(162deg, rgba(255, 255, 255, 0.54), rgba(236, 230, 247, 0.34));
+    border: 1px solid rgba(75, 58, 143, 0.11);
+    list-style: none;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__pix-item {
+    display: flex;
+    align-items: flex-end;
+    min-width: 0;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__img {
+    height: 62px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 5px 8px rgba(0, 74, 66, 0.13));
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__pix[data-count="4"] .purelane-bundles__img,
+  #shopify-section-{{ section.id }} .purelane-bundles__pix[data-count="5"] .purelane-bundles__img {
+    height: 54px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__img.placeholder-svg {
+    height: 62px;
+    width: auto;
+    opacity: 0.5;
+    filter: none;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__pix-item--sold .purelane-bundles__img {
+    opacity: 0.5;
+    filter: grayscale(0.4);
+  }
+
+  /* quantity */
+  #shopify-section-{{ section.id }} .purelane-bundles__qty {
+    font-family: var(--font-heading-family);
+    font-weight: 800;
+    font-size: 52px;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    color: var(--pb-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__qty small {
+    display: block;
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--pb-muted);
+  }
+
+  /* price */
+  #shopify-section-{{ section.id }} .purelane-bundles__price {
+    margin: 16px 0 4px;
+    font-family: var(--font-heading-family);
+    font-weight: 700;
+    font-size: 27px;
+    color: var(--pb-accent-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__price s {
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--pb-muted);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__per {
+    margin: 0;
+    font-size: 12px;
+    color: var(--pb-body);
+  }
+
+  /* description / feature list */
+  #shopify-section-{{ section.id }} .purelane-bundles__desc {
+    margin: 16px 0 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--pb-body);
+    overflow-wrap: anywhere;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__desc > :first-child { margin-top: 0; }
+  #shopify-section-{{ section.id }} .purelane-bundles__desc > :last-child { margin-bottom: 0; }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__desc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__desc li {
+    position: relative;
+    padding-left: 22px;
+  }
+
+  /* CSS check mark (decorative) */
+  #shopify-section-{{ section.id }} .purelane-bundles__desc li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 4px;
+    width: 11px;
+    height: 6px;
+    border-left: 2px solid var(--pb-accent-ink);
+    border-bottom: 2px solid var(--pb-accent-ink);
+    transform: rotate(-45deg);
+  }
+
+  /* CTA — pinned to the bottom so cards align */
+  #shopify-section-{{ section.id }} .purelane-bundles__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 46px;
+    margin-top: auto;
+    padding: 0 22px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.35s var(--pb-ease), box-shadow 0.35s var(--pb-ease), background-color 0.35s var(--pb-ease);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__btn svg {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__btn--ghost {
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(75, 58, 143, 0.22);
+    color: #01423b;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__btn--primary {
+    background: linear-gradient(135deg, #00706a, #004b46);
+    color: #f4fdf6;
+    box-shadow: 0 12px 26px rgba(0, 80, 74, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+
+  @media (hover: hover) {
+    #shopify-section-{{ section.id }} .purelane-bundles__btn--ghost:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+    #shopify-section-{{ section.id }} .purelane-bundles__btn--primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(0, 80, 74, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles a:focus-visible {
+    outline: 2px solid var(--pb-accent-ink);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__hint {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: var(--pb-muted);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles__empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 30px 16px;
+    color: var(--pb-body);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-bundles .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 760px) {
+    #shopify-section-{{ section.id }} .purelane-bundles__qty {
+      font-size: 44px;
+    }
+    #shopify-section-{{ section.id }} .purelane-bundles__pix {
+      height: 70px;
+    }
+    #shopify-section-{{ section.id }} .purelane-bundles__img {
+      height: 54px;
+    }
+    #shopify-section-{{ section.id }} .purelane-bundles__pix[data-count="4"] .purelane-bundles__img,
+    #shopify-section-{{ section.id }} .purelane-bundles__pix[data-count="5"] .purelane-bundles__img {
+      height: 46px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #shopify-section-{{ section.id }} .purelane-bundles__tier,
+    #shopify-section-{{ section.id }} .purelane-bundles__btn {
+      transition: none;
+    }
+    #shopify-section-{{ section.id }} .purelane-bundles__tier:hover,
+    #shopify-section-{{ section.id }} .purelane-bundles__btn:hover {
+      transform: none;
+    }
+  }
+  /* add-to-cart busy state (transient only; resting button design unchanged) */
+  #shopify-section-{{ section.id }} .purelane-bundles__btn[aria-busy="true"] {
+    opacity: 0.65;
+    pointer-events: none;
+  }
+{% endstyle %}
+
+<section class="purelane-bundles"{% if section.settings.heading != blank %} aria-labelledby="{{ heading_id }}"{% else %} aria-label="Build your bundle"{% endif %}>
+  <div class="purelane-bundles__wrap">
+    <div class="purelane-bundles__panel">
+      {%- if section.settings.kicker != blank -%}
+        <span class="purelane-bundles__kicker">{{ section.settings.kicker | escape }}</span>
+      {%- endif -%}
+
+      {%- if section.settings.heading != blank -%}
+        <{{ heading_tag }} class="purelane-bundles__title" id="{{ heading_id }}">{{ section.settings.heading | escape }}</{{ heading_tag }}>
+      {%- endif -%}
+
+      {%- if section.settings.subheading != blank -%}
+        <div class="purelane-bundles__lede">{{ section.settings.subheading }}</div>
+      {%- endif -%}
+    </div>
+
+    <ul class="purelane-bundles__grid" role="list">
+      {%- if bundle_blocks.size > 0 -%}
+        {%- for block in bundle_blocks -%}
+          {%- liquid
+            # Count filled product slots — this drives the "Products" quantity.
+            assign slot_count = 0
+            for n in (1..5)
+              assign key = 'product_' | append: n
+              if block.settings[key] != blank
+                assign slot_count = slot_count | plus: 1
+              endif
+            endfor
+
+            assign btn_class = 'purelane-bundles__btn--ghost'
+            if block.settings.highlight
+              assign btn_class = 'purelane-bundles__btn--primary'
+            endif
+
+            assign cta_link = block.settings.cta_link | default: '#shop'
+            assign cta_label = block.settings.cta_label | default: 'Build this box'
+
+            # Collect the first available variant id of each configured product,
+            # skipping missing and sold-out products. Drives the add-to-cart CTA.
+            assign cart_ids = ''
+            for n in (1..5)
+              assign key = 'product_' | append: n
+              assign cp = block.settings[key]
+              if cp != blank and cp.available
+                assign cv = cp.selected_or_first_available_variant
+                if cv != blank
+                  if cart_ids == ''
+                    assign cart_ids = cv.id | append: ''
+                  else
+                    assign cart_ids = cart_ids | append: ',' | append: cv.id
+                  endif
+                endif
+              endif
+            endfor
+          -%}
+
+          <li class="purelane-bundles__tier{% if block.settings.highlight %} is-featured{% endif %}" {{ block.shopify_attributes }}>
+            {%- if block.settings.badge != blank -%}
+              <span class="purelane-bundles__flag">{{ block.settings.badge | escape }}</span>
+            {%- endif -%}
+
+            {%- if block.settings.title != blank -%}
+              <h3 class="purelane-bundles__tag">{{ block.settings.title | escape }}</h3>
+            {%- endif -%}
+
+            {%- if slot_count > 0 -%}
+              <ul class="purelane-bundles__pix" data-count="{{ slot_count }}" role="list">
+                {%- for n in (1..5) -%}
+                  {%- assign key = 'product_' | append: n -%}
+                  {%- assign product = block.settings[key] -%}
+                  {%- if product != blank -%}
+                    <li class="purelane-bundles__pix-item{% unless product.available %} purelane-bundles__pix-item--sold{% endunless %}">
+                      <a href="{{ product.url }}" aria-label="{{ product.title | escape }}{% unless product.available %}, {{ 'products.product.sold_out' | t }}{% endunless %}">
+                        {%- if product.featured_image -%}
+                          {{
+                            product.featured_image
+                            | image_url: width: 180
+                            | image_tag:
+                              loading: 'lazy',
+                              class: 'purelane-bundles__img',
+                              alt: '',
+                              widths: '80, 120, 160, 180',
+                              sizes: '60px'
+                          }}
+                        {%- else -%}
+                          {{ 'product-1' | placeholder_svg_tag: 'purelane-bundles__img placeholder-svg' }}
+                        {%- endif -%}
+                      </a>
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+
+              <div class="purelane-bundles__qty">
+                {{- slot_count -}}
+                <small>{% if slot_count == 1 %}Product{% else %}Products{% endif %}</small>
+              </div>
+            {%- elsif request.design_mode -%}
+              <p class="purelane-bundles__hint">Select up to 5 products for this bundle.</p>
+            {%- endif -%}
+
+            {%- if block.settings.price != blank -%}
+              <div class="purelane-bundles__price">
+                {{ block.settings.price | escape }}
+                {%- if block.settings.compare_price != blank -%}
+                  <s>
+                    <span class="visually-hidden">{{ 'products.product.price.regular_price' | t }}</span>
+                    {{ block.settings.compare_price | escape }}
+                  </s>
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+
+            {%- if block.settings.per_product_text != blank -%}
+              <p class="purelane-bundles__per">{{ block.settings.per_product_text | escape }}</p>
+            {%- endif -%}
+
+            {%- if block.settings.description != blank -%}
+              <div class="purelane-bundles__desc">{{ block.settings.description }}</div>
+            {%- endif -%}
+
+            <a class="purelane-bundles__btn {{ btn_class }}" href="{{ cta_link }}"{% if cart_ids != blank %} data-ple-add="{{ cart_ids }}"{% endif %}>
+              {{ cta_label | escape }}
+              {%- if block.settings.highlight -%}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                  <path d="M5 12h13m-5-6 6 6-6 6" />
+                </svg>
+              {%- endif -%}
+            </a>
+          </li>
+        {%- endfor -%}
+
+      {%- elsif request.design_mode -%}
+        <li class="purelane-bundles__empty">Add a <strong>Bundle</strong> block to start building your bundle offers.</li>
+      {%- endif -%}
+    </ul>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var root = document.getElementById('shopify-section-{{ section.id }}');
+    if (!root || root.dataset.pleBundleCart === '1') { return; }
+    root.dataset.pleBundleCart = '1';
+
+    var cartUrl = {{ routes.cart_url | json }};
+    var addUrl = {{ routes.cart_add_url | json }};
+
+    root.addEventListener('click', function (event) {
+      var btn = event.target.closest('.purelane-bundles__btn[data-ple-add]');
+      if (!btn || !root.contains(btn)) { return; }
+
+      var items = (btn.getAttribute('data-ple-add') || '')
+        .split(',')
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean)
+        .map(function (id) { return { id: id, quantity: 1 }; });
+      if (!items.length) { return; } // nothing addable -> let the link fall back
+
+      event.preventDefault();
+      if (btn.getAttribute('aria-busy') === 'true') { return; } // guard double-clicks
+      btn.setAttribute('aria-busy', 'true');
+
+      fetch(addUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ items: items })
+      })
+        .then(function (res) {
+          if (!res.ok) { throw new Error('cart-add-failed'); }
+          return res.json();
+        })
+        .then(function () {
+          window.location.href = cartUrl;
+        })
+        .catch(function () {
+          btn.removeAttribute('aria-busy'); // restore so the shopper can retry
+        });
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Purelane bundles",
+  "max_blocks": 3,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section heading"
+    },
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "Eyebrow text",
+      "default": "Build your bundle"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "One box. Every room."
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading level",
+      "info": "Use H2 on a page that already has an H1 (e.g. the hero).",
+      "options": [
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "richtext",
+      "id": "subheading",
+      "label": "Supporting text",
+      "default": "<p>Mix and match across kitchen, laundry, home and skin. One flat price, no code needed, free shipping either way.</p>"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "bundle",
+      "name": "Bundle",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Bundle title",
+          "info": "Shown as the pill label, e.g. Starter, Most popular, Whole home.",
+          "default": "Starter"
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Feature list / description",
+          "info": "A bulleted list renders with check marks."
+        },
+        {
+          "type": "header",
+          "content": "Badge & highlight"
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Corner flag",
+          "info": "Optional, e.g. Best value."
+        },
+        {
+          "type": "checkbox",
+          "id": "highlight",
+          "label": "Highlight this bundle",
+          "info": "Adds the featured border and a solid CTA button.",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "Pricing",
+          "info": "Bundle pricing is set here, not calculated from the selected products."
+        },
+        {
+          "type": "text",
+          "id": "price",
+          "label": "Bundle price",
+          "info": "e.g. ₹349"
+        },
+        {
+          "type": "text",
+          "id": "compare_price",
+          "label": "Compare-at price",
+          "info": "e.g. ₹598"
+        },
+        {
+          "type": "text",
+          "id": "per_product_text",
+          "label": "Per-product line",
+          "info": "Shown under the price, e.g. Flat ₹174 per product"
+        },
+        {
+          "type": "header",
+          "content": "Call to action"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "Button label",
+          "default": "Build this box"
+        },
+        {
+          "type": "text",
+          "id": "cta_link",
+          "label": "Button link",
+          "info": "A URL or an on-page anchor such as #shop.",
+          "default": "#shop"
+        },
+        {
+          "type": "header",
+          "content": "Products (up to 5)",
+          "info": "Only filled slots are shown; the product count updates automatically."
+        },
+        { "type": "product", "id": "product_1", "label": "Product 1" },
+        { "type": "product", "id": "product_2", "label": "Product 2" },
+        { "type": "product", "id": "product_3", "label": "Product 3" },
+        { "type": "product", "id": "product_4", "label": "Product 4" },
+        { "type": "product", "id": "product_5", "label": "Product 5" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Purelane bundles",
+      "blocks": [
+        {
+          "type": "bundle",
+          "settings": {
+            "title": "Starter",
+            "price": "₹349",
+            "compare_price": "₹598",
+            "per_product_text": "Flat ₹174 per product",
+            "description": "<ul><li>Pick any two products</li><li>Free shipping across India</li></ul>"
+          }
+        },
+        {
+          "type": "bundle",
+          "settings": {
+            "title": "Most popular",
+            "highlight": true,
+            "price": "₹499",
+            "compare_price": "₹897",
+            "per_product_text": "Flat ₹166 per product",
+            "description": "<ul><li>Pick any three products</li><li>Covers kitchen and laundry</li><li>Free shipping across India</li></ul>"
+          }
+        },
+        {
+          "type": "bundle",
+          "settings": {
+            "title": "Whole home",
+            "price": "₹799",
+            "compare_price": "₹1,495",
+            "per_product_text": "Flat ₹160 per product",
+            "description": "<ul><li>Pick any five products</li><li>Every room in one order</li><li>Free shipping across India</li></ul>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,462 @@
+<!--
+  ==========================================================================
+  Purelane chrome - header & footer visual layer for Dawn
+  ==========================================================================
+  Additive ONLY. Changes no Dawn markup, schema, settings or blocks. It
+  restyles Dawn's existing header and footer by targeting their stable class
+  names, and layers on the Purelane look:
+
+    HEADER  floating frosted-glass nav pill, underline-grow nav hover,
+            circular icon-button hovers, accent cart badge, scroll-tighten,
+            subtle entrance.
+    FOOTER  light mint/green background, section headings, link hover slide,
+            pill newsletter input + accent button, circular social icons,
+            reveal-on-scroll.
+    HOME    major sections separated into soft rounded cards on a mint frame.
+
+  INSTALL
+    1. Save this file as  snippets/purelane-chrome.liquid
+    2. In sections/header.liquid, add a render tag for this snippet
+       (render 'purelane-chrome') as the very first line of the file.
+    To revert everything, delete that one line.
+
+  SAFETY
+    - All motion is CSS (transform/opacity) and is switched off under
+      prefers-reduced-motion (the only place motion is disabled).
+    - Nothing here is required for functionality: search, account, cart,
+      cart count, mobile drawer, menus and the newsletter form keep working.
+    - The scroll listener self-guards against duplicate init in the theme
+      editor; the footer reveal degrades to fully-visible without JS.
+    - Colours live in the :root tokens below - tweak them in one place.
+  ==========================================================================
+-->
+<style>
+  :root {
+    /* light glass header (matches the Purelane hero / cards) */
+    --ple-ink: #17102b;
+    --ple-body: rgba(36, 26, 61, 0.82);
+    --ple-muted: rgba(36, 26, 61, 0.58);
+    --ple-accent: #b8701c;
+    --ple-accent-ink: #8a5410;
+    --ple-line: rgba(75, 58, 143, 0.14);
+    --ple-glass: linear-gradient(158deg, rgba(255, 255, 255, 0.74), rgba(236, 230, 247, 0.5));
+    --ple-glass-shadow: 0 16px 38px rgba(58, 44, 112, 0.12);
+    --ple-glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    --ple-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    /* light mint/green footer (matches the Purelane hero) */
+    --ple-foot-bg1: #f2fbf3;
+    --ple-foot-bg2: #cfeed8;
+    --ple-paper: #17102b;                    /* strongest text (link hover) */
+    --ple-paper-2: rgba(36, 26, 61, 0.82);   /* body text */
+    --ple-paper-3: rgba(36, 26, 61, 0.66);   /* muted text */
+    --ple-foot-accent: #8a5410;              /* headings / accents, readable on light */
+    --ple-foot-line: rgba(75, 58, 143, 0.14);
+  }
+
+  /* ==========================================================================
+     HEADER
+     ========================================================================== */
+
+  /* the outer sticky bar becomes transparent; the pill carries the surface */
+  .header-wrapper {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Dawn's .header (also .page-width) becomes the floating glass pill */
+  .header.header {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-radius: 999px;
+    background: var(--ple-glass);
+    border: 1px solid var(--ple-line);
+    box-shadow: var(--ple-glass-shadow), var(--ple-glass-inset);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    transition:
+      margin 0.4s var(--ple-ease),
+      padding 0.4s var(--ple-ease),
+      box-shadow 0.4s var(--ple-ease);
+  }
+
+  /* keep comfortable inner side padding on the pill at all widths */
+  @media screen and (min-width: 750px) {
+    .header.header {
+      padding-left: 26px;
+      padding-right: 22px;
+    }
+  }
+
+  /* text/wordmark logo echoes the prototype .n1 wordmark */
+  .header__heading-link {
+    font-family: var(--font-heading-family);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ple-ink);
+    transition: color 0.3s var(--ple-ease);
+  }
+  .header__heading-link:hover {
+    color: var(--ple-accent-ink);
+  }
+  .header__heading-logo {
+    transition: transform 0.4s var(--ple-ease);
+  }
+
+  /* ---- desktop inline navigation: underline-grow on hover/focus ---- */
+  .header__inline-menu .list-menu__item {
+    color: var(--ple-body);
+  }
+  .header__inline-menu .header__menu-item {
+    position: relative;
+    color: var(--ple-body);
+    text-decoration: none;
+    transition: color 0.3s var(--ple-ease);
+  }
+  /* remove Dawn's own link underline pseudo so ours is the only one */
+  .header__inline-menu .header__menu-item::after,
+  .header__inline-menu .header__menu-item::before {
+    content: none;
+  }
+  .header__inline-menu .header__menu-item > span {
+    position: relative;
+  }
+  .header__inline-menu .header__menu-item > span::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -4px;
+    height: 1.5px;
+    background: var(--ple-accent);
+    transition: right 0.35s var(--ple-ease);
+  }
+  .header__inline-menu .header__menu-item:hover,
+  .header__inline-menu .header__menu-item:focus-visible {
+    color: var(--ple-ink);
+  }
+  .header__inline-menu .header__menu-item:hover > span::after,
+  .header__inline-menu .header__menu-item:focus-visible > span::after {
+    right: 0;
+  }
+  /* active item shows the underline at rest */
+  .header__inline-menu .header__active-menu-item {
+    color: var(--ple-ink);
+  }
+  .header__active-menu-item > span::after {
+    right: 0 !important;
+  }
+
+  /* ---- icon buttons: circular hover, like the prototype .ico ---- */
+  .header__icon,
+  .header__icon--cart,
+  .header__icon--account {
+    border-radius: 50%;
+    color: var(--ple-body);
+    transition: background-color 0.3s var(--ple-ease), color 0.3s var(--ple-ease);
+  }
+  .header__icon:hover {
+    background: rgba(75, 58, 143, 0.1);
+    color: var(--ple-ink);
+  }
+  .header__icon .icon {
+    transition: transform 0.3s var(--ple-ease);
+  }
+  .header__icon:hover .icon {
+    transform: scale(1.06);
+  }
+
+  /* ---- cart count bubble: accent pill with a soft pop when it appears ---- */
+  .cart-count-bubble {
+    background: var(--ple-accent) !important;
+    color: #fff !important;
+    box-shadow: 0 3px 9px rgba(184, 112, 28, 0.4);
+    animation: ple-pop 0.32s var(--ple-ease) both;
+  }
+  .cart-count-bubble span {
+    color: #fff !important;
+  }
+
+  /* ---- scroll-tighten: mirrors the prototype top:38px -> 10px float-up ---- */
+  .header-wrapper.purelane-scrolled .header.header {
+    margin-top: 6px;
+    margin-bottom: 6px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    box-shadow: 0 20px 46px rgba(58, 44, 112, 0.2), var(--ple-glass-inset);
+  }
+
+  /* ---- gentle one-time entrance (transform/opacity only; not the LCP hero) ---- */
+  .header.header {
+    animation: ple-header-in 0.7s var(--ple-ease) both;
+  }
+  @keyframes ple-header-in {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes ple-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ==========================================================================
+     FOOTER
+     ========================================================================== */
+  .footer {
+    background:
+      radial-gradient(58% 48% at 18% 0%, rgba(255, 255, 255, 0.55), transparent 70%),
+      radial-gradient(52% 60% at 88% 24%, rgba(176, 226, 190, 0.45), transparent 72%),
+      linear-gradient(180deg, var(--ple-foot-bg1) 0%, #e3f5e7 46%, var(--ple-foot-bg2) 100%) !important;
+    border-top: 1px solid var(--ple-foot-line);
+    color: var(--ple-paper-2);
+  }
+  /* dark text across the footer for contrast on the light background */
+  .footer .footer-block__details-content,
+  .footer .footer-block__details-content a,
+  .footer .footer-block__brand-info,
+  .footer .copyright__content,
+  .footer .footer__content-bottom,
+  .footer .rte,
+  .footer small,
+  .footer p {
+    color: var(--ple-paper-2);
+  }
+
+  .footer .footer-block__heading {
+    font-family: var(--font-heading-family);
+    color: var(--ple-foot-accent);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+  }
+
+  /* menu / info links: colour lift + slide on hover, like prototype .fcol a */
+  .footer a {
+    color: var(--ple-paper-2);
+    transition: color 0.25s var(--ple-ease), transform 0.25s var(--ple-ease);
+  }
+  .footer a:hover {
+    color: var(--ple-paper);
+  }
+  .footer .footer-block__details-content a:hover,
+  .footer .list-menu__item--link:hover {
+    color: var(--ple-paper);
+    transform: translateX(3px);
+  }
+  .footer .list-menu__item--active {
+    color: var(--ple-paper);
+  }
+
+  /* dividers */
+  .footer__content-bottom {
+    border-top: 1px solid var(--ple-foot-line);
+  }
+
+  /* ---- newsletter: pill field + accent button ---- */
+  .footer .newsletter-form__field-wrapper .field {
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .footer .newsletter-form .field__input {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(75, 58, 143, 0.18);
+    color: var(--ple-paper);
+    border-radius: 999px;
+  }
+  .footer .newsletter-form .field__input:focus,
+  .footer .newsletter-form .field__input:focus-visible {
+    border-color: var(--ple-foot-accent);
+    box-shadow: 0 0 0 2px rgba(240, 160, 60, 0.35);
+    outline: 0;
+  }
+  .footer .newsletter-form .field__input::placeholder {
+    color: var(--ple-paper-3);
+  }
+  .footer .newsletter-form .field__label {
+    color: var(--ple-paper-3);
+  }
+  .footer .newsletter-form__button {
+    color: var(--ple-foot-accent);
+    transition: transform 0.3s var(--ple-ease), color 0.3s var(--ple-ease);
+  }
+  .footer .newsletter-form__button:hover {
+    color: var(--ple-paper);
+    transform: translateX(2px);
+  }
+  .footer .newsletter-form__message {
+    color: var(--ple-paper-2);
+  }
+
+  /* ---- social icons: circular hover ---- */
+  .footer .list-social__link {
+    border-radius: 50%;
+    color: var(--ple-paper-2);
+    transition: background-color 0.3s var(--ple-ease), color 0.3s var(--ple-ease), transform 0.3s var(--ple-ease);
+  }
+  .footer .list-social__link:hover {
+    background: rgba(75, 58, 143, 0.1);
+    color: var(--ple-paper);
+    transform: translateY(-2px);
+  }
+
+  /* payment icons sit comfortably on the light background */
+  .footer .payment-icon {
+    opacity: 0.9;
+  }
+
+  /* localization / policy controls stay legible */
+  .footer .footer__localization .disclosure__button,
+  .footer .localization-form__select,
+  .footer .policies .list-menu__item--link {
+    color: var(--ple-paper-2);
+  }
+
+  /* ---- footer reveal-on-scroll (only active once JS opts the footer in) ---- */
+  .footer[data-ple-reveal] .footer-block,
+  .footer[data-ple-reveal] .footer__content-bottom {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s var(--ple-ease), transform 0.8s var(--ple-ease);
+  }
+  .footer[data-ple-reveal] .footer-block:nth-child(2) { transition-delay: 0.08s; }
+  .footer[data-ple-reveal] .footer-block:nth-child(3) { transition-delay: 0.16s; }
+  .footer[data-ple-reveal] .footer-block:nth-child(4) { transition-delay: 0.24s; }
+  .footer[data-ple-reveal] .footer-block:nth-child(5) { transition-delay: 0.32s; }
+  .footer[data-ple-reveal] .footer-block.ple-in,
+  .footer[data-ple-reveal] .footer__content-bottom.ple-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ==========================================================================
+     HOMEPAGE SECTION SPACING & ROUNDED CARDS
+     Separates the major Purelane sections into soft rounded cards with the
+     mint/green page colour showing between them. Purely visual: no content,
+     layout, typography, animation or settings are changed. Scoped to the
+     homepage via the hero (:has), and to the Purelane sections by their own
+     root classes, so it never affects other templates.
+     ========================================================================== */
+
+  /* soft mint frame behind the cards (homepage only) */
+  #MainContent:has(.purelane-hero) {
+    background: #dff1e4;
+    padding-bottom: clamp(28px, 5vw, 56px);
+  }
+
+  /* full-bleed hero keeps its width; softens where it meets the first card */
+  .purelane-hero {
+    border-bottom-left-radius: clamp(20px, 3vw, 30px);
+    border-bottom-right-radius: clamp(20px, 3vw, 30px);
+  }
+
+  /* the four content sections become centred, rounded cards with clear gaps.
+     max-width stays below 100% minus a responsive gutter, so the mint frame
+     shows on every side from 375px up and never causes horizontal overflow */
+  .purelane-grid,
+  .purelane-combos,
+  .purelane-bundles,
+  .purelane-reviews {
+    max-width: min(1240px, calc(100% - clamp(24px, 8vw, 96px)));
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: clamp(28px, 5vw, 56px);
+    border-radius: clamp(20px, 3vw, 30px);
+    overflow: hidden;
+    box-shadow: 0 20px 48px rgba(40, 70, 45, 0.12);
+  }
+
+  /* Reviews ships transparent; give it a card surface so it reads like the
+     others (same mint/green gradient family as the neighbouring sections) */
+  .purelane-reviews {
+    background: linear-gradient(178deg, #f0fbf2 0%, #d9f2df 34%, #c3e9cf 72%, #b6e2c5 100%);
+  }
+
+  /* ==========================================================================
+     REDUCED MOTION - the only place motion is switched off
+     ========================================================================== */
+  @media (prefers-reduced-motion: reduce) {
+    .header.header,
+    .cart-count-bubble {
+      animation: none !important;
+    }
+    .header.header,
+    .header__inline-menu .header__menu-item > span::after,
+    .header__icon,
+    .header__icon .icon,
+    .footer a,
+    .footer .list-social__link,
+    .footer .newsletter-form__button,
+    .footer[data-ple-reveal] .footer-block,
+    .footer[data-ple-reveal] .footer__content-bottom {
+      transition: none !important;
+    }
+    /* never leave reveal content stuck hidden */
+    .footer[data-ple-reveal] .footer-block,
+    .footer[data-ple-reveal] .footer__content-bottom {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function init() {
+      /* --- header scroll-tighten (idempotent across theme-editor reloads) --- */
+      var wrapper = document.querySelector('.header-wrapper');
+      if (wrapper) {
+        var apply = function () {
+          var y = window.scrollY || window.pageYOffset || 0;
+          wrapper.classList.toggle('purelane-scrolled', y > 40);
+        };
+        apply();
+        if (!window.__purelaneChromeScroll) {
+          window.__purelaneChromeScroll = true;
+          var ticking = false;
+          window.addEventListener('scroll', function () {
+            if (!ticking) {
+              ticking = true;
+              window.requestAnimationFrame(function () {
+                ticking = false;
+                var w = document.querySelector('.header-wrapper');
+                if (w) {
+                  var y = window.scrollY || window.pageYOffset || 0;
+                  w.classList.toggle('purelane-scrolled', y > 40);
+                }
+              });
+            }
+          }, { passive: true });
+        }
+      }
+
+      /* --- footer reveal-on-scroll (degrades to fully visible) --- */
+      var footer = document.querySelector('.footer');
+      if (footer && 'IntersectionObserver' in window && !reduce.matches) {
+        footer.setAttribute('data-ple-reveal', '');
+        var items = footer.querySelectorAll('.footer-block, .footer__content-bottom');
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('ple-in');
+              io.unobserve(entry.target);
+            }
+          });
+        }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+        items.forEach(function (el) { io.observe(el); });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

@@ -1,0 +1,1167 @@
+{%- comment -%}
+  Purelane — Hero section
+  Productionised from the `purelane-homepage.html` prototype.
+
+  Notes for reviewers:
+  - The hero cycles through up to three merchant-defined offer states
+    (1 / 2 / 3 products), mirroring the prototype. A single, section-scoped
+    inline script handles rotation and pauses on hover, on focus, when the
+    section is off-screen, and under prefers-reduced-motion.
+  - The prototype's decorative parallax / ambient-drift JS is intentionally
+    dropped; it is not needed to reproduce the hero behaviour.
+  - All CSS is scoped to #shopify-section-{{ section.id }} so duplicating or
+    reordering the section in the theme editor is safe.
+  - Typography uses the theme's own heading/body font settings instead of
+    loading Google Fonts. Geometry (sizes, weights, tracking, case) is taken
+    from the prototype.
+{%- endcomment -%}
+
+{%- liquid
+  assign heading_tag = section.settings.heading_tag | default: 'h1'
+  assign heading_id = 'purelane-hero-heading-' | append: section.id
+
+  assign cta_url = section.settings.cta_link | default: routes.all_products_collection_url
+  assign cta2_url = section.settings.cta2_link | default: routes.root_url
+
+  assign offer_count = 0
+  assign badge_count = 0
+  for block in section.blocks
+    if block.type == 'offer'
+      assign offer_count = offer_count | plus: 1
+    elsif block.type == 'badge'
+      assign badge_count = badge_count | plus: 1
+    endif
+  endfor
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --ph-ink: #17102b;
+    --ph-body: rgba(36, 26, 61, 0.78);
+    --ph-muted: rgba(36, 26, 61, 0.56);
+    --ph-accent: #b8701c;
+    --ph-accent-ink: #8a5410;
+    --ph-leaf: #416812;
+    --ph-line: rgba(75, 58, 143, 0.16);
+    --ph-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --ph-maxw: 1180px;
+    --ph-stage: clamp(380px, 74svh, 680px);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    min-height: 100svh;
+    padding: clamp(64px, 9vw, 110px) 0 34px;
+    background: linear-gradient(178deg, #fbfffb 0%, #eafaec 24%, #d6f1dc 54%, #bfe8ca 100%);
+    color: var(--ph-body);
+  }
+
+  /* vignette (prototype .vig) */
+  #shopify-section-{{ section.id }} .purelane-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(126% 88% at 50% 26%, transparent 42%, rgba(75, 58, 143, 0.07) 80%, rgba(0, 80, 74, 0.16) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 20%, transparent 70%, rgba(0, 84, 78, 0.1) 100%);
+  }
+
+  /* copy-side legibility wash (prototype .hero::before) */
+  #shopify-section-{{ section.id }} .purelane-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(102deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(255, 255, 255, 0.12) 54%, transparent 68%);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__grid {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: var(--ph-maxw);
+    margin: 0 auto;
+    padding: 0 18px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__copy {
+    position: relative;
+    z-index: 3;
+    max-width: 600px;
+  }
+
+  /* ---------- type ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__title {
+    margin: 0 0 20px;
+    font-family: var(--font-heading-family);
+    font-style: normal;
+    font-weight: 800;
+    font-size: clamp(48px, 8.6vw, 112px);
+    line-height: 0.87;
+    letter-spacing: -0.018em;
+    text-transform: uppercase;
+    color: var(--ph-ink);
+    overflow-wrap: break-word;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__title em {
+    font-style: normal;
+    color: var(--ph-accent);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__rule {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    max-width: 270px;
+    margin: 0 0 20px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__rule i {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(75, 58, 143, 0.34), transparent);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__rule svg {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    color: var(--ph-accent);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__lede {
+    max-width: 44ch;
+    font-size: clamp(15px, 1.35vw, 17.5px);
+    line-height: 1.62;
+    color: var(--ph-body);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__lede > * {
+    margin: 0;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__lede > * + * {
+    margin-top: 0.7em;
+  }
+
+  /* ---------- buttons ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 11px;
+    margin-top: 26px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 22px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.35s var(--ph-ease), box-shadow 0.35s var(--ph-ease), background-color 0.35s var(--ph-ease);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__btn svg {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__btn--primary {
+    background: linear-gradient(135deg, #00706a, #004b46);
+    color: #f4fdf6;
+    box-shadow: 0 12px 26px rgba(0, 80, 74, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__btn--ghost {
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(75, 58, 143, 0.22);
+    color: #01423b;
+  }
+
+  @media (hover: hover) {
+    #shopify-section-{{ section.id }} .purelane-hero__btn--primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(0, 80, 74, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__btn--ghost:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero a:focus-visible {
+    outline: 2px solid var(--ph-accent-ink);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+
+  /* ---------- badge rail / strip (one list, two layouts) ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__badges {
+    display: flex;
+    gap: 8px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__badge {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 11px 6px;
+    border-radius: 14px;
+    background: linear-gradient(158deg, rgba(255, 255, 255, 0.66), rgba(236, 230, 247, 0.44));
+    border: 1px solid rgba(75, 58, 143, 0.13);
+    box-shadow: 0 16px 38px rgba(58, 44, 112, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+    backdrop-filter: blur(12px) saturate(130%);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__badge-icon {
+    display: grid;
+    place-items: center;
+    margin: 0 auto 6px;
+    color: var(--ph-leaf);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__badge-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__badge-text {
+    display: block;
+    font-size: 8.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ph-body);
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------- product ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__product {
+    position: relative;
+    width: min(88vw, 420px);
+    margin: 20px auto 0;
+    filter: drop-shadow(0 14px 22px rgba(0, 74, 66, 0.15));
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__stage {
+    position: relative;
+    width: 100%;
+    height: var(--ph-stage);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__slide.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__slide {
+    transition: opacity 0.85s var(--ph-ease);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__figure {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    width: 100%;
+    height: 100%;
+    padding-right: 2%;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__image {
+    position: relative;
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 14px 22px rgba(0, 74, 66, 0.15));
+  }
+
+  /* Count-driven sizing: mirrors the prototype's 1 / 2 / 3 bottle grouping. */
+  #shopify-section-{{ section.id }} .purelane-hero__figure[data-count="1"] .purelane-hero__image { height: 100%; }
+
+  #shopify-section-{{ section.id }} .purelane-hero__figure[data-count="2"] .purelane-hero__image:nth-child(1) { height: 80%; margin-right: -8%; z-index: 1; }
+  #shopify-section-{{ section.id }} .purelane-hero__figure[data-count="2"] .purelane-hero__image:nth-child(2) { height: 97%; z-index: 3; }
+
+  #shopify-section-{{ section.id }} .purelane-hero__figure[data-count="3"] .purelane-hero__image:nth-child(1) { height: 75%; margin-right: -8%; z-index: 1; }
+  #shopify-section-{{ section.id }} .purelane-hero__figure[data-count="3"] .purelane-hero__image:nth-child(2) { height: 97%; z-index: 3; }
+  #shopify-section-{{ section.id }} .purelane-hero__figure[data-count="3"] .purelane-hero__image:nth-child(3) { height: 79%; margin-left: -8%; z-index: 2; }
+
+  #shopify-section-{{ section.id }} .purelane-hero__dots {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__dot {
+    width: 6px;
+    height: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(75, 58, 143, 0.28);
+    cursor: pointer;
+    transition: width 0.4s var(--ph-ease), background-color 0.4s var(--ph-ease);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__dot[aria-pressed="true"] {
+    width: 20px;
+    border-radius: 999px;
+    background: var(--ph-accent);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__dot:hover {
+    background: rgba(75, 58, 143, 0.5);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__dot:focus-visible {
+    outline: 2px solid var(--ph-accent-ink);
+    outline-offset: 3px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__offer {
+    position: absolute;
+    left: 0;
+    bottom: 2%;
+    z-index: 6;
+    max-width: 58%;
+    padding: 9px 12px 10px;
+    border-radius: 14px;
+    background: linear-gradient(158deg, rgba(255, 255, 255, 0.66), rgba(236, 230, 247, 0.44));
+    border: 1px solid rgba(75, 58, 143, 0.13);
+    box-shadow: 0 16px 38px rgba(58, 44, 112, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+    backdrop-filter: blur(12px) saturate(130%);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__offer-label {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.17em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: var(--ph-accent-ink);
+    overflow-wrap: anywhere;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 7px;
+    margin-top: 5px;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__price-current {
+    font-family: var(--font-heading-family);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ph-ink);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__price-was {
+    font-size: 12px;
+    color: var(--ph-muted);
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__chip {
+    display: inline-block;
+    margin-top: 7px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 8.4px;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    background: rgba(201, 118, 29, 0.16);
+    border: 1px solid rgba(201, 118, 29, 0.36);
+    color: var(--ph-leaf);
+  }
+
+  /* ---------- tablet and up ---------- */
+  @media (min-width: 901px) {
+    #shopify-section-{{ section.id }} .purelane-hero__product {
+      position: absolute;
+      right: 3%;
+      bottom: 28px;
+      width: min(44vw, 440px);
+      margin: 0;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__offer {
+      max-width: 52%;
+      padding: 11px 14px 12px;
+      border-radius: 16px;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__price-current {
+      font-size: 23px;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__copy {
+      max-width: 470px;
+    }
+
+    /* badge list becomes the pinned vertical rail */
+    #shopify-section-{{ section.id }} .purelane-hero__badges {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 4;
+      flex-direction: column;
+      gap: 2px;
+      width: 96px;
+      margin: 0;
+      padding: 12px 8px;
+      border-radius: 20px;
+      background: linear-gradient(158deg, rgba(255, 255, 255, 0.66), rgba(236, 230, 247, 0.44));
+      border: 1px solid rgba(75, 58, 143, 0.13);
+      box-shadow: 0 16px 38px rgba(58, 44, 112, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      -webkit-backdrop-filter: blur(18px) saturate(135%);
+      backdrop-filter: blur(18px) saturate(135%);
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge {
+      flex: 0 0 auto;
+      padding: 11px 4px;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge + .purelane-hero__badge {
+      border-top: 1px solid rgba(75, 58, 143, 0.12);
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge-icon {
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(75, 58, 143, 0.16);
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge-icon svg {
+      width: 19px;
+      height: 19px;
+    }
+  }
+
+  @media (min-width: 1201px) {
+    #shopify-section-{{ section.id }} .purelane-hero__copy {
+      max-width: 600px;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__product {
+      right: 2%;
+      width: min(50vw, 560px);
+    }
+  }
+
+  /* ---------- small phones ---------- */
+  @media (max-width: 900px) {
+    #shopify-section-{{ section.id }} .purelane-hero::after {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.34) 36%, rgba(255, 255, 255, 0.66) 100%);
+    }
+
+    #shopify-section-{{ section.id }} {
+      --ph-stage: clamp(300px, 44svh, 430px);
+    }
+  }
+
+  @media (max-width: 760px) {
+    #shopify-section-{{ section.id }} .purelane-hero {
+      padding-bottom: 22px;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__title {
+      font-size: clamp(44px, 13.5vw, 64px);
+    }
+  }
+
+  @media (max-width: 420px) {
+    #shopify-section-{{ section.id }} .purelane-hero__product {
+      width: min(92vw, 360px);
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge {
+      padding: 9px 4px;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__badge-text {
+      font-size: 8px;
+    }
+  }
+
+  /* ---------- entrance (on by default; disabled under reduced motion below) ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__title,
+  #shopify-section-{{ section.id }} .purelane-hero__rule,
+  #shopify-section-{{ section.id }} .purelane-hero__lede,
+  #shopify-section-{{ section.id }} .purelane-hero__cta,
+  #shopify-section-{{ section.id }} .purelane-hero__badges,
+  #shopify-section-{{ section.id }} .purelane-hero__product {
+    animation: purelane-hero-rise 0.95s var(--ph-ease) both;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__rule { animation-delay: 0.09s; }
+  #shopify-section-{{ section.id }} .purelane-hero__lede { animation-delay: 0.18s; }
+  #shopify-section-{{ section.id }} .purelane-hero__cta { animation-delay: 0.27s; }
+  #shopify-section-{{ section.id }} .purelane-hero__badges { animation-delay: 0.36s; }
+  #shopify-section-{{ section.id }} .purelane-hero__product { animation-delay: 0.12s; }
+
+  @keyframes purelane-hero-rise {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ---------- animated water scene (decorative; prototype .scenes/.water/.bub) ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__scene {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__wl {
+    position: absolute;
+    inset: -12% -10%;
+    display: block;
+    will-change: transform;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__wl--a {
+    background:
+      radial-gradient(38% 46% at 28% 34%, rgba(255, 255, 255, 0.55), transparent 70%),
+      radial-gradient(42% 50% at 72% 60%, rgba(190, 232, 210, 0.5), transparent 72%);
+    mix-blend-mode: soft-light;
+    opacity: 0.9;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__wl--b {
+    background:
+      radial-gradient(34% 44% at 60% 26%, rgba(255, 255, 255, 0.42), transparent 70%),
+      radial-gradient(40% 48% at 20% 72%, rgba(120, 200, 175, 0.4), transparent 72%);
+    mix-blend-mode: overlay;
+    opacity: 0.66;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__wl--surface {
+    inset: -20% -10% auto -10%;
+    height: 60%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 78%);
+    mix-blend-mode: overlay;
+    opacity: 0.6;
+    transform-origin: 50% 0;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__bubbles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  #shopify-section-{{ section.id }} .purelane-hero__bubbles span {
+    position: absolute;
+    bottom: -8%;
+    left: var(--x);
+    width: var(--s);
+    height: var(--s);
+    border-radius: 50%;
+    border: 1px solid rgba(75, 58, 143, 0.26);
+    background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 64%);
+    opacity: 0;
+  }
+
+  /* ---------- decorative continuous motion — on by default; disabled under reduced motion below ---------- */
+  #shopify-section-{{ section.id }} .purelane-hero__wl--a { animation: purelane-hero-drift-a 30s ease-in-out infinite; }
+  #shopify-section-{{ section.id }} .purelane-hero__wl--b { animation: purelane-hero-drift-b 21s ease-in-out infinite; }
+  #shopify-section-{{ section.id }} .purelane-hero__wl--surface { animation: purelane-hero-surface 10s ease-in-out infinite; }
+  #shopify-section-{{ section.id }} .purelane-hero__bubbles span {
+    animation: purelane-hero-bubble var(--d, 18s) linear var(--dl, 0s) infinite;
+  }
+
+  /* gentle bottle bob + offset offer-card float */
+  #shopify-section-{{ section.id }} .purelane-hero__figure { animation: purelane-hero-bob 6.5s ease-in-out infinite; }
+  #shopify-section-{{ section.id }} .purelane-hero__offer { animation: purelane-hero-bob 5.5s ease-in-out infinite 0.8s; }
+
+  /* per-bottle staggered rise as a slide becomes active (active slide starts at rest, so LCP paints immediately) */
+  #shopify-section-{{ section.id }} .purelane-hero__image {
+    transition: opacity 0.7s var(--ph-ease), transform 0.7s var(--ph-ease);
+  }
+  #shopify-section-{{ section.id }} .purelane-hero__slide:not(.is-active) .purelane-hero__image {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  #shopify-section-{{ section.id }} .purelane-hero__slide.is-active .purelane-hero__image:nth-child(2) { transition-delay: 0.1s; }
+  #shopify-section-{{ section.id }} .purelane-hero__slide.is-active .purelane-hero__image:nth-child(3) { transition-delay: 0.2s; }
+
+  /* subtle drift on the pinned desktop promise rail (keeps its -50% centering) */
+  @media (min-width: 901px) {
+    #shopify-section-{{ section.id }} .purelane-hero__badges { animation: purelane-hero-bob-badges 9s ease-in-out infinite 1.2s; }
+  }
+
+  @keyframes purelane-hero-drift-a {
+    0% { transform: translate3d(-3%, 0, 0) scale(1.06); }
+    50% { transform: translate3d(3%, -1.6%, 0) scale(1.12); }
+    100% { transform: translate3d(-3%, 0, 0) scale(1.06); }
+  }
+  @keyframes purelane-hero-drift-b {
+    0% { transform: translate3d(4%, 1%, 0) scale(1.1); }
+    50% { transform: translate3d(-4%, -1%, 0) scale(1.04); }
+    100% { transform: translate3d(4%, 1%, 0) scale(1.1); }
+  }
+  @keyframes purelane-hero-surface {
+    0% { transform: translateY(0) scaleY(1); opacity: 0.5; }
+    50% { transform: translateY(-1.4%) scaleY(1.12); opacity: 0.72; }
+    100% { transform: translateY(0) scaleY(1); opacity: 0.5; }
+  }
+  @keyframes purelane-hero-bob {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-11px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes purelane-hero-bob-badges {
+    0% { transform: translateY(-50%); }
+    50% { transform: translateY(calc(-50% - 6px)); }
+    100% { transform: translateY(-50%); }
+  }
+  @keyframes purelane-hero-bubble {
+    0% { transform: translate3d(0, 0, 0); opacity: 0; }
+    12% { opacity: 0.7; }
+    88% { opacity: 0.5; }
+    100% { transform: translate3d(var(--dx, 0), -112%, 0); opacity: 0; }
+  }
+
+  /* ---------- reduced motion: the ONLY place animation is switched off ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    #shopify-section-{{ section.id }} .purelane-hero__title,
+    #shopify-section-{{ section.id }} .purelane-hero__rule,
+    #shopify-section-{{ section.id }} .purelane-hero__lede,
+    #shopify-section-{{ section.id }} .purelane-hero__cta,
+    #shopify-section-{{ section.id }} .purelane-hero__badges,
+    #shopify-section-{{ section.id }} .purelane-hero__product,
+    #shopify-section-{{ section.id }} .purelane-hero__wl,
+    #shopify-section-{{ section.id }} .purelane-hero__wl--a,
+    #shopify-section-{{ section.id }} .purelane-hero__wl--b,
+    #shopify-section-{{ section.id }} .purelane-hero__wl--surface,
+    #shopify-section-{{ section.id }} .purelane-hero__bubbles span,
+    #shopify-section-{{ section.id }} .purelane-hero__figure,
+    #shopify-section-{{ section.id }} .purelane-hero__offer {
+      animation: none !important;
+    }
+
+    /* keep entrance-animated content fully visible when its animation is off */
+    #shopify-section-{{ section.id }} .purelane-hero__title,
+    #shopify-section-{{ section.id }} .purelane-hero__rule,
+    #shopify-section-{{ section.id }} .purelane-hero__lede,
+    #shopify-section-{{ section.id }} .purelane-hero__cta,
+    #shopify-section-{{ section.id }} .purelane-hero__badges,
+    #shopify-section-{{ section.id }} .purelane-hero__product {
+      opacity: 1;
+    }
+
+    /* no cross-fade / per-bottle rise; slides just switch instantly */
+    #shopify-section-{{ section.id }} .purelane-hero__slide,
+    #shopify-section-{{ section.id }} .purelane-hero__image {
+      transition: none !important;
+    }
+
+    #shopify-section-{{ section.id }} .purelane-hero__slide:not(.is-active) .purelane-hero__image {
+      transform: none;
+    }
+  }
+{% endstyle %}
+
+<section class="purelane-hero"{% if section.settings.heading != blank %} aria-labelledby="{{ heading_id }}"{% else %} aria-label="Hero"{% endif %}>
+  <div class="purelane-hero__scene" aria-hidden="true">
+    <span class="purelane-hero__wl purelane-hero__wl--a"></span>
+    <span class="purelane-hero__wl purelane-hero__wl--b"></span>
+    <span class="purelane-hero__wl purelane-hero__wl--surface"></span>
+    <span class="purelane-hero__bubbles">
+      <span style="--x: 12%; --s: 10px; --d: 15s; --dl: 0s; --dx: 14px;"></span>
+      <span style="--x: 27%; --s: 7px; --d: 19s; --dl: 3s; --dx: -10px;"></span>
+      <span style="--x: 45%; --s: 13px; --d: 17s; --dl: 6s; --dx: 18px;"></span>
+      <span style="--x: 63%; --s: 8px; --d: 21s; --dl: 2s; --dx: -16px;"></span>
+      <span style="--x: 78%; --s: 11px; --d: 16s; --dl: 8s; --dx: 12px;"></span>
+      <span style="--x: 90%; --s: 6px; --d: 23s; --dl: 5s; --dx: -8px;"></span>
+    </span>
+  </div>
+  <div class="purelane-hero__grid">
+    <div class="purelane-hero__copy">
+      {%- if section.settings.heading != blank -%}
+        <{{ heading_tag }} class="purelane-hero__title" id="{{ heading_id }}">{{ section.settings.heading }}</{{ heading_tag }}>
+      {%- endif -%}
+
+      <div class="purelane-hero__rule" aria-hidden="true">
+        <i></i>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+          <path d="M12 21c0-6.5 3.5-11 8-12.5C20 15 16.5 20 12 21Z" />
+          <path d="M12 21C12 14.5 8.5 10 4 8.5 4 15 7.5 20 12 21Z" />
+        </svg>
+        <i></i>
+      </div>
+
+      {%- if section.settings.body != blank -%}
+        <div class="purelane-hero__lede">{{ section.settings.body }}</div>
+      {%- endif -%}
+
+      {%- if section.settings.cta_label != blank or section.settings.cta2_label != blank -%}
+        <div class="purelane-hero__cta">
+          {%- if section.settings.cta_label != blank -%}
+            <a class="purelane-hero__btn purelane-hero__btn--primary" href="{{ cta_url }}">
+              {{ section.settings.cta_label | escape }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M5 12h13m-5-6 6 6-6 6" />
+              </svg>
+            </a>
+          {%- endif -%}
+          {%- if section.settings.cta2_label != blank -%}
+            <a class="purelane-hero__btn purelane-hero__btn--ghost" href="{{ cta2_url }}">
+              {{- section.settings.cta2_label | escape -}}
+            </a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- if badge_count > 0 -%}
+      <ul class="purelane-hero__badges" role="list">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'badge' -%}
+          <li class="purelane-hero__badge" {{ block.shopify_attributes }}>
+            <span class="purelane-hero__badge-icon" aria-hidden="true">
+              {%- case block.settings.icon -%}
+                {%- when 'shield' -%}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <path d="M12 3 4.5 6v6.2c0 4.3 3.1 7.6 7.5 8.8 4.4-1.2 7.5-4.5 7.5-8.8V6L12 3Z" />
+                    <path d="m9 12 2.2 2.2L15.4 10" />
+                  </svg>
+                {%- when 'no_chemicals' -%}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <circle cx="12" cy="12" r="8.4" />
+                    <path d="M6.4 17.6 17.6 6.4" />
+                  </svg>
+                {%- else -%}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <path d="M12 21c0-6.5 3.5-11 8-12.5C20 15 16.5 20 12 21Z" />
+                    <path d="M12 21C12 14.5 8.5 10 4 8.5 4 15 7.5 20 12 21Z" />
+                  </svg>
+              {%- endcase -%}
+            </span>
+            <span class="purelane-hero__badge-text">{{ block.settings.text | escape }}</span>
+          </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    <div class="purelane-hero__product">
+      <div class="purelane-hero__stage">
+        {%- if offer_count > 0 -%}
+          {%- assign slide_i = 0 -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'offer' -%}
+              {%- liquid
+                assign p1 = block.settings.product_1
+                assign p2 = block.settings.product_2
+                assign p3 = block.settings.product_3
+                assign pcount = 0
+                if p1 != blank
+                  assign pcount = pcount | plus: 1
+                endif
+                if p2 != blank
+                  assign pcount = pcount | plus: 1
+                endif
+                if p3 != blank
+                  assign pcount = pcount | plus: 1
+                endif
+                assign display_count = pcount
+                if display_count == 0
+                  assign display_count = 1
+                endif
+              -%}
+              <div
+                class="purelane-hero__slide{% if slide_i == 0 %} is-active{% endif %}"
+                data-block-id="{{ block.id }}"
+                aria-hidden="{% if slide_i == 0 %}false{% else %}true{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                <div class="purelane-hero__figure" data-count="{{ display_count }}">
+                  {%- if pcount > 0 -%}
+                    {%- for n in (1..3) -%}
+                      {%- assign key = 'product_' | append: n -%}
+                      {%- assign prod = block.settings[key] -%}
+                      {%- if prod != blank -%}
+                        {%- if prod.featured_image -%}
+                          {%- if slide_i == 0 -%}
+                            {{ prod.featured_image | image_url: width: 800 | image_tag: loading: 'eager', fetchpriority: 'high', class: 'purelane-hero__image', alt: prod.title, widths: '200, 300, 400, 500, 600, 700, 800', sizes: '(min-width: 1201px) 560px, (min-width: 901px) 440px, 88vw' }}
+                          {%- else -%}
+                            {{ prod.featured_image | image_url: width: 800 | image_tag: loading: 'lazy', class: 'purelane-hero__image', alt: prod.title, widths: '200, 300, 400, 500, 600, 700, 800', sizes: '(min-width: 1201px) 560px, (min-width: 901px) 440px, 88vw' }}
+                          {%- endif -%}
+                        {%- else -%}
+                          {{ 'product-1' | placeholder_svg_tag: 'purelane-hero__image' }}
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+                  {%- else -%}
+                    {{ 'product-1' | placeholder_svg_tag: 'purelane-hero__image' }}
+                  {%- endif -%}
+                </div>
+
+                {%- if block.settings.offer_label != blank or block.settings.price != blank or block.settings.savings_label != blank -%}
+                  <div class="purelane-hero__offer">
+                    {%- if block.settings.offer_label != blank -%}
+                      <span class="purelane-hero__offer-label">{{ block.settings.offer_label | escape }}</span>
+                    {%- endif -%}
+                    {%- if block.settings.price != blank -%}
+                      <span class="purelane-hero__price">
+                        <span class="purelane-hero__price-current">{{ block.settings.price | escape }}</span>
+                        {%- if block.settings.compare_price != blank -%}
+                          <s class="purelane-hero__price-was"><span class="visually-hidden">{{ 'products.product.price.regular_price' | t }}</span>{{ block.settings.compare_price | escape }}</s>
+                        {%- endif -%}
+                      </span>
+                    {%- endif -%}
+                    {%- if block.settings.savings_label != blank -%}
+                      <span class="purelane-hero__chip">{{ block.settings.savings_label | escape }}</span>
+                    {%- endif -%}
+                  </div>
+                {%- endif -%}
+              </div>
+              {%- assign slide_i = slide_i | plus: 1 -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- else -%}
+          <div class="purelane-hero__slide is-active">
+            <div class="purelane-hero__figure" data-count="1">
+              {{ 'product-1' | placeholder_svg_tag: 'purelane-hero__image' }}
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+
+      {%- if offer_count > 1 -%}
+        <div class="purelane-hero__dots" role="group" aria-label="Choose an offer">
+          {%- assign dot_i = 0 -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'offer' -%}
+              <button
+                type="button"
+                class="purelane-hero__dot"
+                aria-pressed="{% if dot_i == 0 %}true{% else %}false{% endif %}"
+                aria-label="{% if block.settings.offer_label != blank %}{{ block.settings.offer_label | escape }}{% else %}Offer {{ dot_i | plus: 1 }}{% endif %}"
+              ></button>
+              {%- assign dot_i = dot_i | plus: 1 -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var root = document.getElementById('shopify-section-{{ section.id }}');
+    if (!root) { return; }
+
+    var slides = Array.prototype.slice.call(root.querySelectorAll('.purelane-hero__slide'));
+    var dots = Array.prototype.slice.call(root.querySelectorAll('.purelane-hero__dot'));
+    if (slides.length < 2) { return; }
+
+    var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var current = 0;
+    var timer = null;
+    var DELAY = 3800;
+
+    function render(index) {
+      current = (index + slides.length) % slides.length;
+      slides.forEach(function (slide, i) {
+        var active = i === current;
+        slide.classList.toggle('is-active', active);
+        slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      dots.forEach(function (dot, i) {
+        dot.setAttribute('aria-pressed', i === current ? 'true' : 'false');
+      });
+    }
+
+    function play() {
+      if (!timer && !motion.matches) {
+        timer = setInterval(function () { render(current + 1); }, DELAY);
+      }
+    }
+
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    dots.forEach(function (dot, i) {
+      dot.addEventListener('click', function () { stop(); render(i); play(); });
+    });
+
+    // Pause while the visitor is interacting; resume when they leave.
+    root.addEventListener('mouseenter', stop);
+    root.addEventListener('mouseleave', play);
+    root.addEventListener('focusin', stop);
+    root.addEventListener('focusout', play);
+
+
+    // Only auto-rotate while the hero is on screen.
+    var observer = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { entry.isIntersecting ? play() : stop(); });
+      }, { threshold: 0.2 });
+      observer.observe(root);
+    } else {
+      play();
+    }
+
+    // Respect a live change to the motion preference (reference kept for cleanup).
+    function onMotionChange() {
+      stop();
+      if (!motion.matches) { play(); }
+    }
+    if (typeof motion.addEventListener === 'function') {
+      motion.addEventListener('change', onMotionChange);
+    }
+
+    // Theme editor: reveal the offer state being edited.
+    function onBlockSelect(event) {
+      for (var i = 0; i < slides.length; i++) {
+        if (slides[i].getAttribute('data-block-id') === event.detail.blockId) {
+          stop();
+          render(i);
+          return;
+        }
+      }
+    }
+    document.addEventListener('shopify:block:select', onBlockSelect);
+    document.addEventListener('shopify:block:deselect', play);
+
+    // Theme editor: tear everything down when this section instance is unloaded
+    // or reloaded, so no stale listeners/observers accumulate across edits.
+    function onSectionUnload(event) {
+      if (event.detail.sectionId !== '{{ section.id }}') { return; }
+      stop();
+      if (observer) { observer.disconnect(); }
+      if (typeof motion.removeEventListener === 'function') {
+        motion.removeEventListener('change', onMotionChange);
+      }
+      document.removeEventListener('shopify:block:select', onBlockSelect);
+      document.removeEventListener('shopify:block:deselect', play);
+      document.removeEventListener('shopify:section:unload', onSectionUnload);
+    }
+    document.addEventListener('shopify:section:unload', onSectionUnload);
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Purelane hero",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "info": "Italicise a word to show it in the accent colour. Use Shift + Enter for a line break.",
+      "default": "Clean That <em>Lasts</em>"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading level",
+      "info": "Use H1 only when this section is the main heading of the page.",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "richtext",
+      "id": "body",
+      "label": "Supporting text",
+      "default": "<p>Homecare that works on the toughest grime, made from plants. Kind to your home, your family and the world outside it.</p>"
+    },
+    {
+      "type": "header",
+      "content": "Buttons"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Primary button label",
+      "default": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Primary button link",
+      "info": "Leave empty to link to the all-products page."
+    },
+    {
+      "type": "text",
+      "id": "cta2_label",
+      "label": "Secondary button label",
+      "default": "How it works"
+    },
+    {
+      "type": "url",
+      "id": "cta2_link",
+      "label": "Secondary button link"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "offer",
+      "name": "Offer state",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "offer_label",
+          "label": "Offer label",
+          "default": "Single bottle"
+        },
+        {
+          "type": "product",
+          "id": "product_1",
+          "label": "Product 1"
+        },
+        {
+          "type": "product",
+          "id": "product_2",
+          "label": "Product 2 (optional)"
+        },
+        {
+          "type": "product",
+          "id": "product_3",
+          "label": "Product 3 (optional)"
+        },
+        {
+          "type": "text",
+          "id": "price",
+          "label": "Offer price",
+          "info": "Bundle / offer price, shown large (e.g. \u20b9200). Not pulled from a single product."
+        },
+        {
+          "type": "text",
+          "id": "compare_price",
+          "label": "Compare-at price"
+        },
+        {
+          "type": "text",
+          "id": "savings_label",
+          "label": "Savings label",
+          "info": "e.g. 33% off, or Save \u20b9249"
+        }
+      ]
+    },
+    {
+      "type": "badge",
+      "name": "Promise",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "leaf", "label": "Leaf" },
+            { "value": "shield", "label": "Shield" },
+            { "value": "no_chemicals", "label": "No chemicals" }
+          ],
+          "default": "leaf"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Plant powered"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Purelane hero",
+      "blocks": [
+        { "type": "offer", "settings": { "offer_label": "Single bottle", "price": "\u20b9200", "compare_price": "\u20b9299", "savings_label": "33% off" } },
+        { "type": "offer", "settings": { "offer_label": "Any 2 products", "price": "\u20b9349", "compare_price": "\u20b9598", "savings_label": "Save \u20b9249" } },
+        { "type": "offer", "settings": { "offer_label": "Any 3 products", "price": "\u20b9499", "compare_price": "\u20b9897", "savings_label": "Save \u20b9398" } },
+        { "type": "badge", "settings": { "icon": "leaf", "text": "Plant powered" } },
+        { "type": "badge", "settings": { "icon": "shield", "text": "Safe for kids & pets" } },
+        { "type": "badge", "settings": { "icon": "no_chemicals", "text": "Zero harsh chemicals" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
