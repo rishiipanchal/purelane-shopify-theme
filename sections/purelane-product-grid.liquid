@@ -449,7 +449,7 @@
               {%- endif -%}
 
               {%- if has_product -%}
-                <a class="purelane-grid__media" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+                <a class="purelane-grid__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
                   {%- if product.featured_image -%}
                     {{
                       product.featured_image
