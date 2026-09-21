@@ -573,7 +573,7 @@
                       {%- assign bkey = 'benefit_' | append: n -%}
                       {%- assign benefit = block.settings[bkey] -%}
                       <li class="purelane-combos__it">
-                        <a class="purelane-combos__tile" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+                        <a class="purelane-combos__tile" href="{{ product.url }}" aria-label="{{ product.title | escape }}{% unless product.available %}, {{ 'products.product.sold_out' | t }}{% endunless %}">
                           {%- if product.featured_image -%}
                             {{
                               product.featured_image
